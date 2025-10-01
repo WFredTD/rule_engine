@@ -12,6 +12,11 @@ OPERATOR_MAP = {
 
 
 class RuleEngine:
+    """
+    Classe principal responsável por receber as regras e validar um dado de entrada.
+    Esta implementação usa o princípio de Inversão de Controle (IoC) para desvincular
+    a lógica de negócio da execução do código.
+    """
     def __init__(self, rules):
         self.rules = rules
 
@@ -19,9 +24,9 @@ class RuleEngine:
 
         erros = []
 
-        # Dentro do seu método validate(self, data):
+        # Itera sobre todas as regras carregadas do PostgreSQL
         for regra in self.rules:
-            # Desempacotamento por índice (ajuste os índices se necessário)
+            # Desempacotamento de Tupla por índice
             nome_regra = regra[1]
             campo_alvo = regra[2]
             operador = regra[3]
@@ -31,22 +36,22 @@ class RuleEngine:
             # O valor que precisamos checar do cliente:
             valor_do_dado = data.get(campo_alvo)
 
+            # 1. Tratamento de Campo Ausente
             if valor_do_dado is None:
                 erros.append(f"ERRO: Campo '{campo_alvo}' ausente no dado de entrada.")
                 continue  # Pula para a próxima regra
 
+            # 2. Lógica de Validação e Conversão de Tipo
             try:
-                # Vamos assumir que a maioria das regras são numéricas para começar.
+                # Conversão para números para comparação (necessário para operadores > / <=)
                 valor_dado_num = float(valor_do_dado)
                 valor_esperado_num = float(valor_esperado)
             except ValueError:
-                # Se a conversão falhar (ex: "idade" é 'abc'):
-                # 1. Adicione a mensagem de erro à lista
+                # Se a conversão falhar adiciona a mensagem de erro à lista
                 erros.append(
                     f"ERRO DE TIPO: O valor '{valor_do_dado}' ou '{valor_esperado}' da regra '{nome_regra}' não é numérico."
                 )
-
-                # 2. Pule o restante do loop, pois a comparação não pode ser feita
+                # Pula o restante do loop, pois a comparação não pode ser feita
                 continue
 
             op_func = OPERATOR_MAP.get(operador)

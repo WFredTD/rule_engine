@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine # Imagem oficial do PostgreSQL
+    container_name: rule_engine_db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432" # Porta para acesso direto (opcional, mas útil para ferramentas)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # Dê um tempo inicial para subir
+
+  app:
+    build: .
+    container_name: rule_engine_app
+    restart: on-failure
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy # AGORA ESPERAMOS QUE O DB ESTEJA SAUDÁVEL
+    command: python -m rule-engine.database # Comando de execução inicial
+    volumes:
+      - ./rule-engine:/app/rule-engine # Monta o código local no container para desenvolvimento
+    
+
+volumes:
+  postgres_data:
